@@ -1,22 +1,11 @@
-<!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java -->
-<dependency>
-    <groupId>org.seleniumhq.selenium</groupId>
-    <artifactId>selenium-java</artifactId>
-    <version>4.22.0</version>
-</dependency>
-
-
-
-
-
-
-import org.apache.poi.xwpf.usermodel.*;
-import org.openqa.selenium.*;
+import org.docx4j.Docx4J;
+import org.docx4j.convert.out.html.HTMLSettings;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
-import java.io.*;
-import java.util.concurrent.TimeUnit;
+import java.io.File;
 
 public class WordToImageConverter {
 
@@ -24,6 +13,9 @@ public class WordToImageConverter {
         // Path to your input Word document
         String inputFilePath = "path/to/your/document.docx";
         
+        // Output HTML file path
+        String outputHtmlPath = "path/to/save/document.html";
+
         // Output image file path
         String outputImagePath = "path/to/save/screenshot.png";
 
@@ -31,14 +23,16 @@ public class WordToImageConverter {
         WebDriver driver = setupWebDriver();
 
         try {
-            // Load the Word document using Apache POI
-            XWPFDocument document = new XWPFDocument(new FileInputStream(inputFilePath));
+            // Load the Word document using docx4j
+            WordprocessingMLPackage wordMLPackage = Docx4J.load(new File(inputFilePath));
 
-            // Extract content and convert to HTML
-            String htmlContent = convertToHTML(document);
+            // Convert docx to HTML
+            HTMLSettings htmlSettings = Docx4J.createHTMLSettings();
+            htmlSettings.setWmlPackage(wordMLPackage);
+            Docx4J.toHTML(htmlSettings, outputHtmlPath);
 
             // Load HTML content in Selenium WebDriver
-            driver.get("data:text/html," + htmlContent);
+            driver.get("file://" + new File(outputHtmlPath).getAbsolutePath());
 
             // Wait for the page to render (adjust wait time based on document complexity)
             Thread.sleep(5000); // Example: wait for 5 seconds (adjust as needed)
@@ -72,13 +66,5 @@ public class WordToImageConverter {
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 
         return driver;
-    }
-
-    private static String convertToHTML(XWPFDocument document) {
-        // Convert XWPFDocument to HTML (simplified example, adjust as needed)
-        StringWriter writer = new StringWriter();
-        XWPFToHTMLConverter converter = new XWPFToHTMLConverter(document, writer, null);
-        converter.processDocument();
-        return writer.toString();
     }
 }
