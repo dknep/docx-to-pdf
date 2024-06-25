@@ -1,107 +1,72 @@
-If you're looking for a Java library to convert Word documents to PDF without using iText or Apache POI, and ensuring it's suitable for commercial use and free from vulnerabilities, you can consider using **Aspose.Words for Java**. Aspose.Words is a robust commercial library that provides comprehensive support for working with Microsoft Word documents, including conversion to PDF. Here's how you can achieve this:
+import org.apache.poi.xwpf.usermodel.*;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
-### Using Aspose.Words for Java
+import java.io.*;
+import java.util.concurrent.TimeUnit;
 
-1. **Add Aspose.Words Dependency**:
-   You need to add the Aspose.Words for Java dependency to your project. Aspose.Words is a commercial library, so you'll need to obtain a license if you plan to use it in a commercial setting.
+public class WordToImageConverter {
 
-   ```xml
-   <dependency>
-       <groupId>com.aspose</groupId>
-       <artifactId>aspose-words</artifactId>
-       <version>22.4</version> <!-- Replace with the latest version -->
-   </dependency>
-   ```
+    public static void main(String[] args) {
+        // Path to your input Word document
+        String inputFilePath = "path/to/your/document.docx";
+        
+        // Output image file path
+        String outputImagePath = "path/to/save/screenshot.png";
 
-   You also need to include the Aspose.Words repository in your `pom.xml`:
+        // Initialize Selenium WebDriver
+        WebDriver driver = setupWebDriver();
 
-   ```xml
-   <repositories>
-       <repository>
-           <id>AsposeJavaAPI</id>
-           <name>Aspose Java API</name>
-           <url>http://repository.aspose.com/repo/</url>
-       </repository>
-   </repositories>
-   ```
+        try {
+            // Load the Word document using Apache POI
+            XWPFDocument document = new XWPFDocument(new FileInputStream(inputFilePath));
 
-   Alternatively, if you are using Gradle, add the dependency in your `build.gradle`:
+            // Extract content and convert to HTML
+            String htmlContent = convertToHTML(document);
 
-   ```gradle
-   dependencies {
-       implementation 'com.aspose:aspose-words:22.4' // Replace with the latest version
-   }
-   ```
+            // Load HTML content in Selenium WebDriver
+            driver.get("data:text/html," + htmlContent);
 
-2. **Set Up License** (if applicable):
-   If you're using Aspose.Words in a commercial environment, you need to set up a license to remove evaluation limitations. You can obtain a license from the Aspose website and set it up in your code. Here's an example of how you would set the license:
+            // Wait for the page to render (adjust wait time based on document complexity)
+            Thread.sleep(5000); // Example: wait for 5 seconds (adjust as needed)
 
-   ```java
-   import com.aspose.words.License;
+            // Capture screenshot of the rendered document
+            File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(screenshot, new File(outputImagePath));
 
-   public class LicenseExample {
+            System.out.println("Document screenshot saved: " + outputImagePath);
 
-       public static void main(String[] args) {
-           // Set path to the license file
-           String licenseFile = "path_to_your_license_file.xml";
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Quit WebDriver instance
+            driver.quit();
+        }
+    }
 
-           // Initialize license
-           try {
-               License license = new License();
-               license.setLicense(licenseFile);
-               System.out.println("License set successfully.");
-           } catch (Exception e) {
-               e.printStackTrace();
-               System.err.println("Failed to set license: " + e.getMessage());
-           }
-       }
-   }
-   ```
+    private static WebDriver setupWebDriver() {
+        // Setup Chrome WebDriver (adjust path to your ChromeDriver executable)
+        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
 
-3. **Java Code**:
-   Write Java code to convert a Word document to PDF using Aspose.Words:
+        // ChromeOptions to set headless mode (optional, remove if you want visible browser)
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless"); // Comment this line to show the browser window
 
-   ```java
-   import com.aspose.words.Document;
-   import com.aspose.words.SaveFormat;
+        // Initialize WebDriver
+        WebDriver driver = new ChromeDriver(options);
 
-   import java.io.FileInputStream;
-   import java.io.FileOutputStream;
+        // Set implicit wait time
+        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 
-   public class DocToPdfConverter {
+        return driver;
+    }
 
-       public static void main(String[] args) throws Exception {
-           convertDocToPdf("input.docx", "output.pdf");
-       }
-
-       public static void convertDocToPdf(String docFilePath, String pdfFilePath) throws Exception {
-           // Load the document
-           FileInputStream fis = new FileInputStream(docFilePath);
-           Document doc = new Document(fis);
-
-           // Save as PDF
-           FileOutputStream fos = new FileOutputStream(pdfFilePath);
-           doc.save(fos, SaveFormat.PDF);
-
-           // Close streams
-           fos.close();
-           fis.close();
-
-           System.out.println("DOCX to PDF conversion successful.");
-       }
-   }
-   ```
-
-### Explanation:
-
-- **Aspose.Words**: Used for loading and manipulating Word documents (`docx` format).
-- **SaveFormat.PDF**: Specifies that the document should be saved as a PDF file.
-- **License**: Ensures that the library is used legally in a commercial environment.
-
-### Notes:
-
-- **Commercial Use**: Aspose.Words is a commercial library, so it requires purchasing a license for commercial use.
-- **Vulnerabilities**: Aspose.Words is regularly updated and maintained by a professional team, reducing the risk of vulnerabilities compared to some open-source alternatives.
-- **Functionality**: Aspose.Words provides extensive features for working with Word documents beyond simple conversion, making it suitable for various document processing tasks in commercial applications.
-
-Using Aspose.Words ensures reliable and feature-rich document conversion capabilities in Java, suitable for commercial applications where stability and support are critical.
+    private static String convertToHTML(XWPFDocument document) {
+        // Convert XWPFDocument to HTML (simplified example, adjust as needed)
+        StringWriter writer = new StringWriter();
+        XWPFToHTMLConverter converter = new XWPFToHTMLConverter(document, writer, null);
+        converter.processDocument();
+        return writer.toString();
+    }
+}
